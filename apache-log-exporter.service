@@ -1,0 +1,16 @@
+[Unit]
+Description=Apache-Log-Exporter
+Wants=network-online.target
+After=network-online.target 
+
+[Service]
+Type=simple
+User=apache-log-exporter
+Group=apache-log-exporter
+ExecStart=/usr/bin/python3 /opt/apache-log-exporter/apache-log-exporter.py
+Restart=always
+RestartSec=10s
+NotifyAccess=all 
+
+[Install]
+WantedBy=multi-user.target

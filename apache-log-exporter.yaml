@@ -1,0 +1,6 @@
+input:
+  filename: /var/log/apache2/other_vhosts_access.log
+resolver:
+  127.0.0.1: localhost
+  127.0.1.1: localhost
+  1.2.3.4: myhome
