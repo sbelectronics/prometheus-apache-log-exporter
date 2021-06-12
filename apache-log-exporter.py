@@ -1,5 +1,7 @@
+from prometheus_client import Counter, Summary, start_http_server
 import os
 import stat
+import sys
 import time
 from apachelogs import LogParser, COMBINED
 
@@ -43,16 +45,70 @@ def follow(fn):
             lastSize = newSize
 
 
-def main():
-    parser = LogParser(COMBINED)
-    while True:
-        try:
-            for line in follow("sample.log"):
-                entry = parser.parse(line)
-                print(entry.remote_host, entry.final_status, entry.bytes_sent, entry.request_line)
-        except (FileNotFoundError, InodeChangedError, FileShrunkError) as e:
-            time.sleep(1)
+def warn(s):
+    print(s, file=sys.stderr)
 
+class ApacheLogExporter:
+    def __init__(self, fn = "sample.log", port=9101):
+        self.fn = fn
+        self.parser = LogParser(COMBINED)
+
+        self.webRequestCount = Counter('apache_web_request_count', 
+                                   'Requests processed by the web server',
+                                   ['remote_host_name', 'remote_host_port', 'final_status'])
+
+        self.webRequestSent = Counter('apache_web_request_sent', 
+                                   'Size of Requests processed by the web server',
+                                   ['remote_host_name', 'remote_host_port', 'final_status'])                                   
+
+        start_http_server(port)
+
+    def parse_line(self, line):
+        entry = self.parser.parse(line)
+
+        if not entry.remote_host:
+            warn("no remote_host in line: %s" % line)
+            return None
+
+        if ":" not in entry.remote_host:
+            warn("no colon in remote_host in line: %s" % line)
+            return None
+
+        entry.remote_host_name, entry.remote_host_port = entry.remote_host.split(":",1)
+        entry.remote_host_port = int(entry.remote_host_port)
+        return entry
+
+    def read_log_files(self):
+        while True:
+            try:
+                for line in follow("sample.log"):
+                    try:
+                        entry = self.parse_line(line)
+                    except Exception as e:
+                        warn("Failed to parse line %s: %s" % (line, e))
+                        continue
+                    
+                    if not entry:
+                        continue
+
+                    self.webRequestCount.labels(
+                        remote_host_name=entry.remote_host_name,
+                        remote_host_port=str(entry.remote_host_port),
+                        final_status = str(entry.final_status)).inc()
+
+                    self.webRequestSent.labels(
+                        remote_host_name=entry.remote_host_name,
+                        remote_host_port=str(entry.remote_host_port),
+                        final_status = str(entry.final_status)).inc(entry.bytes_sent)                        
+
+                    print(entry.remote_host_name, entry.remote_host_port, entry.final_status, entry.bytes_sent, entry.request_line)
+            except (FileNotFoundError, InodeChangedError, FileShrunkError) as e:
+                time.sleep(1)        
+
+
+def main():
+    le = ApacheLogExporter()
+    le.read_log_files()
 
 
 if __name__ == "__main__":
