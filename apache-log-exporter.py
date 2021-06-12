@@ -3,69 +3,13 @@ import stat
 import time
 from apachelogs import LogParser, COMBINED
 
+
 class InodeChangedError(Exception):
     pass
 
+
 class FileShrunkError(Exception):
     pass
-
-class LogRowIncorrectPartCount(Exception):
-    pass
-
-class ApacheLogRow:
-    def __init__(self):
-        pass
-
-    # https://stackoverflow.com/questions/12544510/parsing-apache-log-files
-    def processLine(self, s):
-        ''' Fast split on Apache2 log lines
-
-        http://httpd.apache.org/docs/trunk/logs.html
-        '''
-        row = [ ]
-        qe = qp = None # quote end character (qe) and quote parts (qp)
-        for s in s.replace('\r','').replace('\n','').split(' '):
-            if qp:
-                qp.append(s)
-            elif '' == s: # blanks
-                row.append('')
-            elif '"' == s[0]: # begin " quote "
-                qp = [ s ]
-                qe = '"'
-            elif '[' == s[0]: # begin [ quote ]
-                qp = [ s ]
-                qe = ']'
-            else:
-                row.append(s)
-
-            l = len(s)
-            if l and qe == s[-1]: # end quote
-                if l == 1 or s[-2] != '\\': # don't end on escaped quotes
-                    row.append(' '.join(qp)[1:-1].replace('\\'+qe, qe))
-                    qp = qe = None
-
-        if (len(row) != 10):
-            raise LogRowIncorrectOartCount
-
-        self.parseParts(row)
-
-    def parseParts(self, parts):
-        # part0 is host:port
-        if ":" in parts[0]:
-            (self.localAddress, self.localPort) = parts[0].split(":", 1)
-        else:
-            self.localAddress = parts[0]
-            self.localPort = 80  # took a guess
-
-        self.remoteAddress = parts[1]
-
-        self.dateStr = parts[4]
-
-        (self.cmd, self.url, self.proto) = self.decodeCommand(parts[5])
-
-        self.code = self.decodeInt(parts[6])
-
-        self.length = self.decodeInt(parts[7])
 
 
 def GetInodeAndSize(fn):
