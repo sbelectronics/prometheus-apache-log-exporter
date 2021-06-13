@@ -1,5 +1,7 @@
 input:
   filename: /var/log/apache2/other_vhosts_access.log
+  format: VHOST_COMBINED
+  ignoreExisting: true
 resolver:
   127.0.0.1: localhost
   127.0.1.1: localhost

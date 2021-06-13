@@ -89,10 +89,17 @@ class ApacheLogExporter:
     def parse_line(self, line):
         entry = self.parser.parse(line)
 
-        #print(entry.virtual_host, entry.server_port, entry.remote_host, entry.final_status, entry.bytes_out)
-        #print(dir(entry))
-        #sys.exit(-1)
+        # in case some log formats don't include these values
 
+        if not hasattr(entry, "virtual_host"):
+            entry.virtual_host = "unspecified"
+
+        if not hasattr(entry, "server_port"):
+            entry.server_port = 80
+
+        if not hasattr(entry, "bytes_out"):
+            entry.bytes_out = 0      
+       
         return entry
 
     def read_log_files(self):
