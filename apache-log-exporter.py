@@ -1,5 +1,18 @@
+# Prometheus-Apache-Log-Exporter
+# Copyright Scott Baker, https://www.smbaker.com/
 #
-# setup
+# This is a prometheus exporter for common apache log formats. There is a
+# yaml file, apache-log-exporter.yaml that contains options that control
+# how the log is parsed. By default the program will look for this yaml
+# file in /etc/apache-log-exporter.yaml, but this can be overridden using
+# the "-f" option on the command line.
+#
+# The program will run continuously, reading the log file as new log entries
+# are added to it.
+#
+# For more information, see the README or my blog post.
+#
+# dependencies:
 #   # note: installed promtheus_clien=0.11.0, apachelogs=0.6.0, pydicti=1.1.4
 #   sudo pip3 install promteheus_client
 #   sudo pip3 install apachelogs
